@@ -7,21 +7,19 @@ section
 open ordering
 
 /--
-Extend has_ordering to require the cmp function is consistent with a total
-preordering.
+Define a class for tricotomy comparisons that define preorders.
 -/
-class has_preordering (α : Type _) extends has_ordering α :=
+class has_preordering (α : Type _) :=
+(cmp : α → α → ordering)
 (refl : ∀ (a: α), cmp a a = eq)
 (le_trans : ∀(a b c : α), cmp a b ≤ eq → cmp b c ≤ eq → cmp a c ≠ gt)
 (gt_lt_symm : ∀ (a b : α), cmp a b = gt ↔ cmp b a = lt)
-
 end
 
 namespace has_preordering
 section
 parameters {α : Type _} [has_preordering α]
 
-open has_ordering
 open ordering
 
 theorem eq_symm : ∀ (a b : α), cmp a b = eq → cmp b a = eq :=
@@ -83,12 +81,12 @@ begin
 end
 
 theorem swap_cmp (x y : α)
-: (has_ordering.cmp x y).swap = has_ordering.cmp y x :=
+: (has_preordering.cmp x y).swap = has_preordering.cmp y x :=
 begin
   have gt_lt := (gt_lt_symm y x),
   have eq_eq := (eq_symm x y),
   have lt_gt := (gt_lt_symm x y),
-  destruct (has_ordering.cmp x y);
+  destruct (has_preordering.cmp x y);
   intros d0;
   simp only [d0, ordering.swap];
   cc,
@@ -110,16 +108,17 @@ Note that these axioms will imply that `cmp x = ordering.eq` and `cmp y = orderi
 implies `has_ordering.cmp x y`.
 -/
 class monotonic_find {E: Type _} [has_preordering E] (cmp : E → ordering) :=
-(gt_increases : ∀(x y : E), has_ordering.cmp x y = gt → eq ≤ cmp y → cmp x = gt)
-(eq_preserves : ∀(x y : E), has_ordering.cmp x y = eq → cmp x = cmp y)
-(lt_decreases : ∀(x y : E), has_ordering.cmp x y = lt → cmp y ≤ eq → cmp x = lt)
+(gt_increases : ∀(x y : E), has_preordering.cmp x y = gt → eq ≤ cmp y → cmp x = gt)
+(eq_preserves : ∀(x y : E), has_preordering.cmp x y = eq → cmp x = cmp y)
+(lt_decreases : ∀(x y : E), has_preordering.cmp x y = lt → cmp y ≤ eq → cmp x = lt)
 
 end
 
 namespace monotonic_find
 
 /-- This is used to search for an element equivalent to a given element.-/
-def eq {α : Type _} [has_preordering α] (e y : α) : ordering := has_ordering.cmp y e
+def eq {α : Type _} [has_preordering α] (e y : α) : ordering := has_preordering.cmp y e
+
 
 instance eq_is_cmp {α : Type _} [has_preordering α] (e : α) : monotonic_find (eq e) :=
 { gt_increases :=
@@ -133,7 +132,7 @@ instance eq_is_cmp {α : Type _} [has_preordering α] (e : α) : monotonic_find 
     have h4 := has_preordering.gt_lt_symm y e,
     have h5 := has_preordering.lt_of_eq_of_lt e y x,
     have h6 := has_preordering.lt_of_lt_of_lt e y x,
-    destruct has_ordering.cmp y e; intros cmp_y_e; cc,
+    cases (has_preordering.cmp y e); contradiction <|> cc
   end
 , eq_preserves :=
   begin
@@ -145,7 +144,7 @@ instance eq_is_cmp {α : Type _} [has_preordering α] (e : α) : monotonic_find 
     have h3 := has_preordering.lt_of_eq_of_lt y x e,
     have h4 := has_preordering.eq_trans y x e,
     have h5 := has_preordering.lt_of_lt_of_eq e x y,
-    destruct has_ordering.cmp x e; intro cmp_x_e; cc,
+    destruct has_preordering.cmp x e; intro cmp_x_e; cc,
   end
 , lt_decreases :=
   begin
@@ -154,7 +153,7 @@ instance eq_is_cmp {α : Type _} [has_preordering α] (e : α) : monotonic_find 
     have h0 : ¬ (ordering.gt ≤ ordering.eq) := dec_trivial,
     have h1 := has_preordering.lt_of_lt_of_lt x y e,
     have h2 := has_preordering.lt_of_lt_of_eq x y e,
-    destruct has_ordering.cmp y e; intros cmp_y_e; cc,
+    cases (has_preordering.cmp y e); contradiction <|> cc
   end
 }
 

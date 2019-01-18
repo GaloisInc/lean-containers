@@ -11,9 +11,9 @@ begin
   case list.nil {
     simp [list.find, option.none_or_else],
   },
-  case list.cons h r ind {
-    simp [list.find, ind],
-    by_cases (p h); simp [*, option.some_or_else],
+  case list.cons {
+    simp [list.find, x_ih],
+    by_cases (p x_hd); simp [*, option.some_or_else],
   }
 end
 

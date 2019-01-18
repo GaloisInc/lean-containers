@@ -70,7 +70,7 @@ parameters [has_preordering E]
 /- Return true if keys on right spine of rbtree are less then k. -/
 def all_lt : rbtree E → E → Prop
 | empty high := true
-| (bin _ l x r) high := has_ordering.cmp x high = ordering.lt ∧ all_lt r high
+| (bin _ l x r) high := has_preordering.cmp x high = ordering.lt ∧ all_lt r high
 
 instance all_lt.decidable : ∀(t:rbtree E) (x: E), decidable (all_lt t x)
 | empty y := decidable.is_true true.intro
@@ -79,13 +79,13 @@ instance all_lt.decidable : ∀(t:rbtree E) (x: E), decidable (all_lt t x)
 theorem all_lt_congr
 : ∀(t : rbtree E) (y0 y1 : E),
   all_lt t y0
-→ has_ordering.cmp y0 y1 ≤ ordering.eq
+→ has_preordering.cmp y0 y1 ≤ ordering.eq
 → all_lt t y1 :=
 begin
   intros t y0 y1,
   induction t,
   case empty { simp [all_lt], },
-  case bin _ l x r l_ind r_ind {
+  case bin : _ l x r l_ind r_ind {
     simp [all_lt],
 
     have h0 := has_preordering.lt_of_lt_of_lt x y0 y1,
@@ -93,9 +93,9 @@ begin
     have h2 : ¬ (ordering.gt ≤ ordering.eq) := dec_trivial,
 
     revert l_ind r_ind,
-    destruct has_ordering.cmp y0 y1;
-    destruct has_ordering.cmp x y0;
-    destruct has_ordering.cmp x y1;
+    destruct has_preordering.cmp y0 y1;
+    destruct has_preordering.cmp x y0;
+    destruct has_preordering.cmp x y1;
     intros def0 def1 def2;
     all_goals { cc, },
   },
@@ -114,7 +114,7 @@ end
 /- Return true if keys on left spine of rbtree are greater then k. -/
 def all_gt : rbtree E → E → Prop
 | empty y := true
-| (bin _ l x r) y := all_gt l y ∧ has_ordering.cmp y x = ordering.lt
+| (bin _ l x r) y := all_gt l y ∧ has_preordering.cmp y x = ordering.lt
 
 instance all_gt.decidable : ∀(t:rbtree E) (y: E), decidable (all_gt t y)
 | empty y := decidable.is_true true.intro
@@ -123,13 +123,13 @@ instance all_gt.decidable : ∀(t:rbtree E) (y: E), decidable (all_gt t y)
 theorem all_gt_congr
 : ∀(t : rbtree E) (y0 y1 : E),
   all_gt t y1
-→ has_ordering.cmp y0 y1 ≤ ordering.eq
+→ has_preordering.cmp y0 y1 ≤ ordering.eq
 → all_gt t y0 :=
 begin
   intros t y0 y1,
   induction t,
   case empty { simp [all_gt], },
-  case bin _ l x r l_ind r_ind {
+  case bin : _ l x r l_ind r_ind {
     simp [all_gt],
 
     have h0 := has_preordering.lt_of_lt_of_lt y0 y1 x,
@@ -137,9 +137,9 @@ begin
     have h2 : ¬ (ordering.gt ≤ ordering.eq) := dec_trivial,
 
     revert l_ind r_ind h0 h1,
-    cases has_ordering.cmp y0 y1;
-    cases has_ordering.cmp y1 x;
-    cases has_ordering.cmp y0 x;
+    cases has_preordering.cmp y0 y1;
+    cases has_preordering.cmp y1 x;
+    cases has_preordering.cmp y0 x;
     all_goals { cc, },
 
   },
@@ -246,7 +246,7 @@ theorem find_eq_is_none_of_all_gt {t : rbtree E} {y : E}
 begin
   induction t,
   case empty { intros, trivial, },
-  case bin _ l x r ind_l ind_r {
+  case bin : _ l x r ind_l ind_r {
     have h0 : ordering.eq ≠ ordering.gt := dec_trivial,
     have h4 : (eq ordering.eq ∘ p) x = (ordering.eq = p x) := by simp [function.comp],
 
@@ -269,12 +269,12 @@ theorem find_eq_is_none_of_all_lt {t : rbtree E} {y : E}
 begin
   induction t,
   case empty { intros, trivial, },
-  case bin _ l x r ind_l ind_r {
+  case bin : _ l x r ind_l ind_r {
     have h0 : ordering.eq ≠ ordering.lt := dec_trivial,
     have h4 : (eq ordering.eq ∘ p) x = (ordering.eq = p x) := by simp [function.comp],
 
     simp [is_ordered, all_lt, to_list],
-    intros is_ordered_l is_ordered_r all_gt_r_x all_lt_l_x all_gt_r_y x_lt_y p_y_gt,
+    intros is_ordered_l all_lt_l_x all_gt_r_x is_ordered_r x_lt_y all_gt_r_y p_y_gt,
     have p_x_lt : p x = ordering.lt := monotonic_find.lt_decreases x y x_lt_y  (begin simp[p_y_gt] end),
     have all_lt_l_y : all_lt l y, apply all_lt_congr l x y all_lt_l_x (begin simp [x_lt_y], end),
     simp [*, list.find_append, list.find_cons, option.failure_is_none, option.or_else_none],
@@ -289,7 +289,7 @@ begin
   intros t,
   induction t,
   case rbtree.empty { intro is_ordered_t, refl, },
-  case rbtree.bin _ l x r l_ind r_ind {
+  case rbtree.bin : _ l x r l_ind r_ind {
     have h0 : ordering.eq ≠ ordering.lt := dec_trivial,
     have h1 : ordering.eq ≠ ordering.gt := dec_trivial,
     have h2 : ordering.lt ≤ ordering.eq := dec_trivial,
@@ -297,7 +297,7 @@ begin
     have h4 : (eq ordering.eq ∘ p) x = (ordering.eq = p x) := by simp [function.comp],
 
     simp [lookup, to_list, is_ordered],
-    intros is_ordered_l is_ordered_r all_gt_r_x all_lt_l_x,
+    intros is_ordered_l all_lt_l_x all_gt_r_x is_ordered_r,
     have find_l_is_none := find_eq_is_none_of_all_lt p is_ordered_l all_lt_l_x,
     have find_r_is_none := find_eq_is_none_of_all_gt p is_ordered_r all_gt_r_x,
     destruct (p x);
@@ -327,12 +327,12 @@ end lookup
 
 parameters [has_preordering E]
 
-def key_is_lt (y : E) (p : E) : Prop := has_ordering.cmp p y = ordering.lt
+def key_is_lt (y : E) (p : E) : Prop := has_preordering.cmp p y = ordering.lt
 
 instance key_is_lt_decidable (y : E) : decidable_pred (key_is_lt y) :=
   begin dsimp [decidable_pred, key_is_lt], apply_instance, end
 
-def key_is_gt (y : E) (p : E) : Prop := has_ordering.cmp y p = ordering.lt
+def key_is_gt (y : E) (p : E) : Prop := has_preordering.cmp y p = ordering.lt
 
 instance key_is_gt_decidable (y : E) : decidable_pred (key_is_gt y) :=
   begin dsimp [decidable_pred, key_is_gt], apply_instance, end
@@ -342,9 +342,9 @@ theorem filter_lt_of_all_lt (t : rbtree E) (y : E)
 begin
   induction t,
   case empty { intros, refl, },
-  case bin _ l x r l_ind r_ind {
+  case bin : _ l x r l_ind r_ind {
     simp [is_ordered, all_lt, to_list, list.filter, key_is_lt],
-    intros is_ordered_l is_ordered_r all_gt_r_x all_lt_l_x all_lt_r_y cmp_lt,
+    intros is_ordered_l all_lt_l_x all_gt_r_x is_ordered_r cmp_lt all_lt_r_y,
     have all_lt_ly := all_lt_congr l x y all_lt_l_x (by simp [cmp_lt]),
     simp [*],
   },
@@ -355,11 +355,11 @@ theorem filter_gt_of_all_lt (t : rbtree E) (y : E)
 begin
   induction t,
   case empty { intros, refl, },
-  case bin _ l x r l_ind r_ind {
+  case bin : _ l x r l_ind r_ind {
     simp [is_ordered, all_lt, to_list, list.filter, key_is_gt],
-    intros is_ordered_l is_ordered_r all_gt_r_x all_lt_l_x all_lt_r_y cmp_lt,
+    intros is_ordered_l all_lt_l_x all_gt_r_x is_ordered_r cmp_lt all_lt_r_y,
     have all_lt_ly := all_lt_congr l x y all_lt_l_x (by simp [cmp_lt]),
-    have h : has_ordering.cmp y x ≠ ordering.lt, {
+    have h : has_preordering.cmp y x ≠ ordering.lt, {
       rw [← has_preordering.swap_cmp x y, cmp_lt],
       trivial,
     },
@@ -372,9 +372,9 @@ end
 begin
   induction t,
   case empty { intros, refl, },
-  case bin _ l x r l_ind r_ind {
+  case bin : _ l x r l_ind r_ind {
     simp [is_ordered, all_gt, to_list, list.filter, key_is_gt],
-    intros is_ordered_l is_ordered_r all_gt_r_x all_lt_l_x all_lt_l_y cmp_lt,
+    intros is_ordered_l all_lt_l_x all_gt_r_x is_ordered_r all_lt_l_y cmp_lt,
     have all_gt_ry := all_gt_congr r y x all_gt_r_x (by simp [cmp_lt]),
     simp [*],
   },
@@ -385,11 +385,11 @@ theorem filter_lt_of_all_gt (t : rbtree E) (y : E)
 begin
   induction t,
   case empty { intros, refl, },
-  case bin _ l x r l_ind r_ind {
+  case bin : _ l x r l_ind r_ind {
     simp [is_ordered, all_gt, to_list, list.filter, key_is_lt],
-    intros is_ordered_l is_ordered_r all_gt_r_x all_lt_l_x all_lt_l_y cmp_lt,
+    intros is_ordered_l all_lt_l_x all_gt_r_x is_ordered_r all_lt_l_y cmp_lt,
     have all_gt_ry := all_gt_congr r y x all_gt_r_x (by simp [cmp_lt]),
-    have h : has_ordering.cmp x y ≠ ordering.lt, {
+    have h : has_preordering.cmp x y ≠ ordering.lt, {
       rw [← has_preordering.swap_cmp y x, cmp_lt],
       trivial,
     },
