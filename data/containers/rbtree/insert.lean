@@ -33,11 +33,7 @@ where that matters (i.e. at the roto.)
 -/
 def as_tree : insert_result E → rbtree E
 | (tree u) := u
-| (triple l x c y r) :=
-  match l with
-  | bin red ll lx lr := bin black (bin black ll lx lr) x (bin black c y r)
-  | _ := bin black (bin red l x c) y r
-  end
+| (triple l x c y r) := bin black (bin red l x c) y r
 
 def to_list : insert_result E → list E
 | (tree t) := t.to_list
@@ -413,6 +409,8 @@ def well_formed : insert_result E → Prop
   ∧ l.black_height = c.black_height
   ∧ c.black_height = r.black_height
   ∧ c.tree_color = black
+  ∧ l.tree_color = black
+  ∧ r.tree_color = black
 | (tree t) := t.well_formed
 
 end
@@ -520,7 +518,7 @@ begin
   cases r with t tl tx tc ty tr;
     try { cases tl with tlc tll tlx tlr; try { cases tlc }, };
     try { simp at r_wf, simp[r_wf], };
-    cc,
+    cc
 end
 
 -- To simplify insert_core, we need a restricted definitions that work
@@ -635,8 +633,8 @@ begin
   },
 end
 
-theorem well_formed_insert (y : E) (t : rbtree E) : t.well_formed
- → (insert y t).well_formed :=
+theorem well_formed_insert (y : E) (t : rbtree E) :
+ t.well_formed → (insert y t).well_formed :=
 begin
   intros,
   apply well_formed_as_tree,
